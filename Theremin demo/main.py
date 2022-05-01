@@ -75,7 +75,7 @@ with mp_hands.Hands(
     # Draw zones for recognizing both hands
     # Zone 1 (Left hand, controls gain)
     color_zone1 = (255, 0, 0)
-    rect_zone1_pos1 = (60, 40)
+    rect_zone1_pos1 = (40, 40)
     rect_zone1_pos2 = (300, 440)
     txt_pos_zone1 = (rect_zone1_pos1[0] + 10, rect_zone1_pos1[1] + 25)
     cv2.rectangle(image, rect_zone1_pos1, rect_zone1_pos2, color_zone1, 2)
