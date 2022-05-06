@@ -1,6 +1,7 @@
 import mediapipe as mp
 import cv2
-import pyaudio, struct
+import pyaudio
+import struct
 import numpy as np
 from numpy import pi
 
@@ -22,12 +23,12 @@ Fs = 8000
 # Create Pyaudio object
 p = pyaudio.PyAudio()
 stream = p.open(
-		format = pyaudio.paInt16,
-		channels = 1,
-		rate = Fs,
-		input = False,
-		output = True,
-		frames_per_buffer = 128)
+    format=pyaudio.paInt16,
+    channels=1,
+    rate=Fs,
+    input=False,
+    output=True,
+    frames_per_buffer=128)
 
 # specify output block related parameters
 
@@ -41,140 +42,184 @@ gain = 12800    # temp value for gain
 
 # dictionary for ranges of the zone
 dictZones = {
-	'zone1': [(40, 40), (300, 420)],
-	'zone2': [(340, 150), (600, 420)]
+    'zone1': [(40, 40), (300, 420)],
+    'zone2': [(340, 150), (600, 420)]
+}
+
+# dictionary to link number indices with tags
+handLabels = {
+    0: mp_hands.HandLandmark.WRIST,
+    1: mp_hands.HandLandmark.THUMB_CMC,
+    2: mp_hands.HandLandmark.THUMB_MCP,
+    3: mp_hands.HandLandmark.THUMB_IP,
+    4: mp_hands.HandLandmark.THUMB_TIP,
+    5: mp_hands.HandLandmark.INDEX_FINGER_MCP,
+    6: mp_hands.HandLandmark.INDEX_FINGER_PIP,
+    7: mp_hands.HandLandmark.INDEX_FINGER_DIP,
+    8: mp_hands.HandLandmark.INDEX_FINGER_TIP,
+    9: mp_hands.HandLandmark.MIDDLE_FINGER_MCP,
+    10: mp_hands.HandLandmark.MIDDLE_FINGER_PIP,
+    11: mp_hands.HandLandmark.MIDDLE_FINGER_DIP,
+    12: mp_hands.HandLandmark.MIDDLE_FINGER_TIP,
+    13: mp_hands.HandLandmark.RING_FINGER_MCP,
+    14: mp_hands.HandLandmark.RING_FINGER_PIP,
+    15: mp_hands.HandLandmark.RING_FINGER_DIP,
+    16: mp_hands.HandLandmark.RING_FINGER_TIP,
+    17: mp_hands.HandLandmark.PINKY_MCP,
+    18: mp_hands.HandLandmark.PINKY_PIP,
+    19: mp_hands.HandLandmark.PINKY_DIP,
+    20: mp_hands.HandLandmark.PINKY_TIP,
 }
 
 # Capture WebCam feed
 cap = cv2.VideoCapture(0)
 with mp_hands.Hands(
-		model_complexity=0,
-		min_detection_confidence=0.6,
-		min_tracking_confidence=0.6) as hands:
-	while cap.isOpened():
-		success, image = cap.read()
+        model_complexity=0,
+        min_detection_confidence=0.6,
+        min_tracking_confidence=0.6) as hands:
+    while cap.isOpened():
+        success, image = cap.read()
 
-		if not success:
-				print("Ignoring empty camera frame.")
-				# If loading a video, use 'break' instead of 'continue'.
-				continue
+        if not success:
+            print("Ignoring empty camera frame.")
+            # If loading a video, use 'break' instead of 'continue'.
+            continue
 
-		# Flip the image horizontally for a selfie-view display.
-		image = cv2.flip(image, 1)
+        # Flip the image horizontally for a selfie-view display.
+        image = cv2.flip(image, 1)
 
-		# retrieve the shape of image
-		h, w, c = image.shape
+        # retrieve the shape of image
+        h, w, c = image.shape
 
-		# To improve performance, optionally mark the image as not writeable to
-		# pass by reference.
-		image.flags.writeable = False
-		image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-		results = hands.process(image)
+        # To improve performance, optionally mark the image as not writeable to
+        # pass by reference.
+        image.flags.writeable = False
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = hands.process(image)
 
-		# Draw the hand annotations on the image.
-		image.flags.writeable = True
-		image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-		if results.multi_hand_landmarks:
-			for hand_landmarks in results.multi_hand_landmarks:
-				mp_drawing.draw_landmarks(
-						image,
-						hand_landmarks,
-						mp_hands.HAND_CONNECTIONS,
-						mp_drawing_styles.get_default_hand_landmarks_style(),
-						mp_drawing_styles.get_default_hand_connections_style())
+        # Draw the hand annotations on the image.
+        image.flags.writeable = True
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        if results.multi_hand_landmarks:
+            for hand_landmarks in results.multi_hand_landmarks:
+                mp_drawing.draw_landmarks(
+                    image,
+                    hand_landmarks,
+                    mp_hands.HAND_CONNECTIONS,
+                    mp_drawing_styles.get_default_hand_landmarks_style(),
+                    mp_drawing_styles.get_default_hand_connections_style())
 
-		# Draw zones for recognizing both hands
-		# Zone 1 (Left hand, controls gain)
-		color_zone1 = (255, 0, 0)               # Blue for zone 1
-		rect_zone1_pos1 = dictZones['zone1'][0]
-		rect_zone1_pos2 = dictZones['zone1'][1]
-		txt_pos_zone1 = (rect_zone1_pos1[0] + 10, rect_zone1_pos1[1] + 25)
-		cv2.rectangle(image, rect_zone1_pos1, rect_zone1_pos2, color_zone1, 2)
-		cv2.putText(image, 'Zone 1 (Gain)', txt_pos_zone1, font, font_size, color_zone1, font_thickness)
+        # Draw zones for recognizing both hands
+        # Zone 1 (Left hand, controls gain)
+        color_zone1 = (255, 0, 0)               # Blue for zone 1
+        rect_zone1_pos1 = dictZones['zone1'][0]
+        rect_zone1_pos2 = dictZones['zone1'][1]
+        txt_pos_zone1 = (rect_zone1_pos1[0] + 10, rect_zone1_pos1[1] + 25)
+        cv2.rectangle(image, rect_zone1_pos1, rect_zone1_pos2, color_zone1, 2)
+        cv2.putText(image, 'Zone 1 (Gain)', txt_pos_zone1, font,
+                    font_size, color_zone1, font_thickness)
 
-		# Zone 2 (Right hand, controls frequency)
-		color_zone2 = (255, 0, 255)             # Magenta for zone 2
-		rect_zone2_pos1 = dictZones['zone2'][0]
-		rect_zone2_pos2 = dictZones['zone2'][1]
-		txt_pos_zone2 = (rect_zone2_pos1[0] + 10, rect_zone2_pos1[1] - 20)
-		cv2.rectangle(image, rect_zone2_pos1, rect_zone2_pos2, color_zone2, 2)
-		cv2.putText(image, 'Zone 2 (Freq)', txt_pos_zone2, font, font_size, color_zone2, font_thickness)
+        # Zone 2 (Right hand, controls frequency)
+        color_zone2 = (255, 0, 255)             # Magenta for zone 2
+        rect_zone2_pos1 = dictZones['zone2'][0]
+        rect_zone2_pos2 = dictZones['zone2'][1]
+        txt_pos_zone2 = (rect_zone2_pos1[0] + 10, rect_zone2_pos1[1] - 20)
+        cv2.rectangle(image, rect_zone2_pos1, rect_zone2_pos2, color_zone2, 2)
+        cv2.putText(image, 'Zone 2 (Freq)', txt_pos_zone2, font,
+                    font_size, color_zone2, font_thickness)
 
-		# print info about input video feed on the screen
-		txt_color_imgsize = (0, 0, 255)
-		txt_pos_imgsize = (10, 25)
-		image = cv2.putText(image, 'Input image height: {}, width: {}. Press \"Q\" to quit.'.format(h, w), txt_pos_imgsize, font, font_size, txt_color_imgsize, font_thickness)
+        # print info about input video feed on the screen
+        txt_color_imgsize = (0, 0, 255)
+        txt_pos_imgsize = (10, 25)
+        image = cv2.putText(image, 'Input image height: {}, width: {}. Press \"Q\" to quit.'.format(
+            h, w), txt_pos_imgsize, font, font_size, txt_color_imgsize, font_thickness)
 
+        # sound part
 
-		# sound part
+        # extract the landmarks that I need
+        # turn the indices into labels
 
+        # Left hand (gain): 5 landmarks on the palm (without the wrist one)
+        lm_idx_left = [1, 5, 9, 13, 17]
+        lm_labels_left = []
+        for idx in lm_idx_left:
+            lm_labels_left.append(handLabels[idx])
 
-		# extract the landmarks that I need
+        # right hand (freq): 5 landmarks on the tips of fingers
+        lm_idx_right = [4, 8, 12, 16, 20]
+        lm_labels_right = []
+        for idx in lm_idx_right:
+            lm_labels_right.append(handLabels[idx])
 
-		# Left hand (gain): 5 landmarks on the palm (without the wrist one)
-		lm_idx_left = [1, 5, 9, 13, 17]
+        # Declare lists to store coordinates
+        lm_left_coords = []
+        lm_right_coords = []
 
-		# right hand (freq): 5 landmarks on the tips of fingers
-		lm_idx_right = [4, 8, 12, 16, 20]
+        # get the length of multi_handedness
+        # i.e. num of hands detected
+        if results.multi_handedness:
+            num_hands = len(results.multi_handedness)
+            if num_hands == 2:
 
-		# get the length of multi_handedness
-		# i.e. num of hands detected
-		if results.multi_handedness:
-				num_hands = len(results.multi_handedness)
-				if num_hands == 2:
-						# do something
-						flag_output = True
-				else:
-						# don't output
-						flag_output = False
-				print('len = {}'.format(num_hands))
-				print('index = {}'.format(results.multi_handedness[0].classification[0].index))
-		else:
-				flag_output = False
-				print('No Hand Detected')
+                # Extract the landmarks I need
 
-		# the phase omega
-		om1 = 2.0 * pi * f1 / Fs
+                flag_output = True
+            else:
+                # don't output
+                flag_output = False
+            print('len = {}'.format(num_hands))
+            print('index = {}'.format(
+                results.multi_handedness[0].classification[0].index))
+            print('Landmarks = {}'.format(results.multi_hand_landmarks))
+        else:
+            flag_output = False
+            print('No Hand Detected')
 
-		# output when flag_output is set
-		if flag_output:
-				for i in range(0, BLOCKLEN):
-						output_block[i] = int( gain * np.cos(theta) )
-						theta = theta + om1
+        # the phase omega
+        om1 = 2.0 * pi * f1 / Fs
 
-				# Reset theta when out of bound of pi
-				if theta > pi:
-						theta = theta - 2.0 * pi
+        # output when flag_output is set
+        if flag_output:
+            for i in range(0, BLOCKLEN):
+                output_block[i] = int(gain * np.cos(theta))
+                theta = theta + om1
 
-				# change output status string
-				output_status = 'Active'
+            # Reset theta when out of bound of pi
+            if theta > pi:
+                theta = theta - 2.0 * pi
 
-				# status color for active
-				color_status = (0, 255, 0)
-		else:
-				# if not set, output zero
-				output_block = [0] * BLOCKLEN
-				output_status = 'Inactive'
+            # change output status string
+            output_status = 'Active'
 
-				# status color for inactive
-				color_status = (0, 0, 255)
+            # status color for active
+            color_status = (0, 255, 0)
+        else:
+            # if not set, output zero
+            output_block = [0] * BLOCKLEN
+            output_status = 'Inactive'
 
-		# output audio block
-		binary_data = struct.pack('h' * BLOCKLEN, *output_block)   # 'h' for 16 bits
-		stream.write(binary_data)
+            # status color for inactive
+            color_status = (0, 0, 255)
 
-		# show the output status on the screen
-		pos_status = (20, 450)
+        # output audio block
+        binary_data = struct.pack(
+            'h' * BLOCKLEN, *output_block)   # 'h' for 16 bits
+        stream.write(binary_data)
 
-		cv2.putText(image, 'Output Status: {}'.format(output_status), pos_status, font, font_size, color_status, font_thickness)
+        # show the output status on the screen
+        pos_status = (20, 450)
 
-		# Print the image
-		cv2.imshow('Digital Theremin', image)
+        cv2.putText(image, 'Output Status: {}'.format(output_status),
+                    pos_status, font, font_size, color_status, font_thickness)
 
-		# Wait for key 'q' to be pressed
-		# When pressed, quit
-		if cv2.waitKey(1) & 0xFF == ord('q'):
-				break
+        # Print the image
+        cv2.imshow('Digital Theremin', image)
+
+        # Wait for key 'q' to be pressed
+        # When pressed, quit
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            print('Exit program. Goodbye.')
+            break
 
 stream.stop_stream()
 stream.close()
