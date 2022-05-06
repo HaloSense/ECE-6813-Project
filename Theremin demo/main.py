@@ -4,6 +4,8 @@ import pyaudio, struct
 import numpy as np
 from numpy import pi
 
+from myfunctions import *
+
 # initialze hand recognition related
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -36,18 +38,6 @@ output_block = [0] * BLOCKLEN
 theta = 0
 f1 = 500    # temporary value for f1
 gain = 12800    # temp value for gain
-
-# a function used to detect whether desired nodes are in the right zone
-def in_zone():
-						{}
-
-# a function used to retrieve the coordinate of corresponding node
-
-
-# some flags used during the program
-
-flag_output = False   # flag used to control whether there is audio output
-output_status = 'Inactive'
 
 # dictionary for ranges of the zone
 dictZones = {
