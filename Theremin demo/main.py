@@ -97,7 +97,6 @@ with mp_hands.Hands(
         # retrieve the shape of image
         h, w, c = image.shape
         size_image = (w, h)
-        # print(size_image)
 
         # To improve performance, optionally mark the image as not writeable to
         # pass by reference.
@@ -153,15 +152,11 @@ with mp_hands.Hands(
         for idx in lm_idx_left:
             lm_labels_left.append(dict_hand_labels[idx])
 
-        print(lm_labels_left)
-
         # right hand (freq): 5 landmarks on the tips of fingers
         lm_idx_right = [4, 8, 12, 16, 20]
         lm_labels_right = []
         for idx in lm_idx_right:
             lm_labels_right.append(dict_hand_labels[idx])
-
-        print(lm_labels_right)
 
         # extract coordinates
 
@@ -185,76 +180,52 @@ with mp_hands.Hands(
 
                 # append the coordinates of the hands to the list
                 # hand_coords[0] is left, hand_coords[1] is right
-                hand_coords[0] = get_coord(lm_labels_left, results.multi_hand_landmarks[left_idx], size_image, results)
-                hand_coords[1] = get_coord(lm_labels_right, results.multi_hand_landmarks[right_idx], size_image, results)
-                right_palm = get_coord(lm_labels_left, results.multi_hand_landmarks[right_idx], size_image, results)
-
-                # print('Index for left hand = {}'.format(left_idx))
-                # print('Index for right hand = {}'.format(right_idx))
-                # print(results.multi_handedness)
-                # print(hand_coords[0])
-                # print(hand_coords[1])
+                hand_coords[0] = get_coord(
+                    lm_labels_left, results.multi_hand_landmarks[left_idx], size_image, results)
+                hand_coords[1] = get_coord(
+                    lm_labels_right, results.multi_hand_landmarks[right_idx], size_image, results)
+                right_palm = get_coord(
+                    lm_labels_left, results.multi_hand_landmarks[right_idx], size_image, results)
 
                 # check whether all the points are in the zone
                 flag_all_in_zone = True
 
-                # check left hand in left zone
-                for point in hand_coords[0]:
-                    print('left point = {}'.format(point))
-                    if in_zone(point, dict_zones['zone1'][0], dict_zones['zone1'][1]) == False:
-                        flag_all_in_zone = False
-                    print(in_zone(point, dict_zones['zone1'][0], dict_zones['zone1'][1]))
+                # calculate the critical points:
 
-                # check right hand in right zone
-                for point in hand_coords[1]:
-                    print('right point = {}'.format(point))
-                    if in_zone(point, dict_zones['zone2'][0], dict_zones['zone2'][1]) == False:
-                        flag_all_in_zone = False
-                    print(in_zone(point, dict_zones['zone2'][0], dict_zones['zone2'][1]))
+                # left hand: average coordinate of all points
+                crit_l_arr = np.array(hand_coords[0])
+                crit_left = np.mean(crit_l_arr, axis=0)
+                gain = (h - crit_left[1]) / h * 32767
 
-                print('All in zone? {}'.format(flag_all_in_zone))
+                # right hand: average distance between points
+                crit_r_arr = np.array(hand_coords[1])
+                dist_list = []
+                right_palm_dist = []
 
-                # if all points are in the correct zone
-                if flag_all_in_zone:
+                for i in range(len(crit_r_arr - 1)):
+                    for j in range(i+1, len(crit_r_arr)):
+                        dist_list.append(
+                            calc_dist(crit_r_arr[i, :], crit_r_arr[j, :]))
 
-                    # calculate the critical points:
+                # calculate average distance
+                dist_arr = np.array(dist_list)
+                mean_dist = np.mean(dist_arr)
+                max_dist = np.max(dist_arr)
+                perc_dist = mean_dist/max_dist
 
-                    # left hand: average coordinate of all points
-                    crit_l_arr = np.array(hand_coords[0])
-                    crit_left = np.mean(crit_l_arr, axis = 0)
-                    print(crit_left)
+                print(mean_dist)
 
-                    # right hand: average distance between points
-                    crit_r_arr = np.array(hand_coords[1])
-                    dist_list = []
-                    right_palm_dist = []
+                freq_range = (200, 1250)
+                f1 = set_freq(mean_dist, 300, freq_range)
+                print('f1 = {}'.format(f1))
 
-                    for i in range(len(crit_r_arr - 1)):
-                        for j in range(i+1, len(crit_r_arr)):
-                            dist_list.append(calc_dist(crit_r_arr[i,:], crit_r_arr[j,:]))
+                flag_output = True
 
-                    # calculate average distance
-                    dist_arr = np.array(dist_list)
-                    mean_dist = np.mean(dist_arr)
-                    max_dist = np.max(dist_arr)
-                    perc_dist = mean_dist/max_dist
-
-                    print(mean_dist)
-                    print(max_dist)
-                    print(perc_dist)
-                    
-                    flag_output = True
-
-                else:
-                    flag_output = False
-                
             else:
                 # don't output
                 flag_output = False
-            # print('Detected Hands: {}'.format(num_hands))
         else:
             flag_output = False
-            # print('No Hand Detected')
 
         # the phase omega
         om1 = 2.0 * pi * f1 / Fs

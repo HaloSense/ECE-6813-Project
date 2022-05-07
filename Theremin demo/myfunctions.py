@@ -33,14 +33,14 @@ def in_zone(point, zone_left_top, zone_right_bot):
     if len_pt == len_lt and len_pt == len_rb:
 
         # Initiate flag_inzone
-        flag_inzone = True
+        flag_inzone = False
 
         # Iterate through dimensions
         for idx in range(len_pt):
 
             # If in any dimension, point is not in the zone, set flag to false
-            if point[idx] <= zone_left_top[idx] | point[idx] >= zone_right_bot[idx]:
-                flag_inzone = False
+            if point[idx] > zone_left_top[idx] and point[idx] < zone_right_bot[idx]:
+                flag_inzone = True
 
     else:
         # If the input dimensions don't match, raise exception
@@ -92,3 +92,28 @@ def calc_dist(p1, p2):
 
     else:
         raise RuntimeError('Input dimensions don\'t match.')
+
+def set_freq(x, max_x, freq_range):
+    '''
+    Set the frequency for the oscillation
+
+    x: The value that frequency change accords to.
+    max_x: the largest value that x can be (do not exceed)
+    f: the frequency, in Hz (in logarithmic scale of x)
+    '''
+
+    freq_range = np.array(freq_range)
+
+    x_range = np.log(freq_range)
+    xr_width = np.max(x_range) - np.min(x_range)
+    
+    # get the percentage of x to max_x
+    ratio = x/max_x
+
+    # get current x
+    x_curr = np.min(x_range) + xr_width * ratio
+
+    # get current frequency
+    freq_curr = np.exp(x_curr)
+
+    return freq_curr
