@@ -23,9 +23,6 @@ Fs = 8000
 # Specify initial value for output flag
 flag_output = False
 
-# Specify initial value for flag to check whether all the points are in the zone
-flag_all_in_zone = True
-
 # Create Pyaudio object
 p = pyaudio.PyAudio()
 stream = p.open(
@@ -45,6 +42,9 @@ output_block = [0] * BLOCKLEN
 theta = 0
 f1 = 500    # temporary value for f1
 gain = 12800    # temp value for gain
+
+# some other variables to cancel artifact
+gain_prev = 0
 
 # dictionary for ranges of the zone
 dict_zones = {
@@ -122,17 +122,17 @@ with mp_hands.Hands(
         rect_zone1_pos1 = dict_zones['zone1'][0]
         rect_zone1_pos2 = dict_zones['zone1'][1]
         txt_pos_zone1 = (rect_zone1_pos1[0] + 10, rect_zone1_pos1[1] + 25)
-        cv2.rectangle(image, rect_zone1_pos1, rect_zone1_pos2, color_zone1, 2)
-        cv2.putText(image, 'Zone 1 (Gain)', txt_pos_zone1, font,
+        # cv2.rectangle(image, rect_zone1_pos1, rect_zone1_pos2, color_zone1, 2)
+        cv2.putText(image, 'Left Hand (Gain)', txt_pos_zone1, font,
                     font_size, color_zone1, font_thickness)
 
         # Zone 2 (Right hand, controls frequency)
         color_zone2 = (255, 0, 255)             # Magenta for zone 2
         rect_zone2_pos1 = dict_zones['zone2'][0]
         rect_zone2_pos2 = dict_zones['zone2'][1]
-        txt_pos_zone2 = (rect_zone2_pos1[0] + 10, rect_zone2_pos1[1] - 20)
-        cv2.rectangle(image, rect_zone2_pos1, rect_zone2_pos2, color_zone2, 2)
-        cv2.putText(image, 'Zone 2 (Freq)', txt_pos_zone2, font,
+        txt_pos_zone2 = (rect_zone2_pos1[0] + 10, rect_zone2_pos1[1] + 25)
+        # cv2.rectangle(image, rect_zone2_pos1, rect_zone2_pos2, color_zone2, 2)
+        cv2.putText(image, 'Right Hand (Freq)', txt_pos_zone2, font,
                     font_size, color_zone2, font_thickness)
 
         # print info about input video feed on the screen
@@ -169,6 +169,8 @@ with mp_hands.Hands(
         # i.e. num of hands detected
         if results.multi_handedness:
             num_hands = len(results.multi_handedness)
+
+            # output sound only when both hands are detected
             if num_hands == 2:
 
                 # determine the indices of the hands
@@ -187,10 +189,7 @@ with mp_hands.Hands(
                 right_palm = get_coord(
                     lm_labels_left, results.multi_hand_landmarks[right_idx], size_image, results)
 
-                # check whether all the points are in the zone
-                flag_all_in_zone = True
-
-                # calculate the critical points:
+                # calculate the critical values:
 
                 # left hand: average coordinate of all points
                 crit_l_arr = np.array(hand_coords[0])
@@ -233,18 +232,25 @@ with mp_hands.Hands(
         # output when flag_output is set
         if flag_output:
             for i in range(0, BLOCKLEN):
-                output_block[i] = int(clip16(gain * np.cos(theta)))
-                theta = theta + om1
+                this_theta = theta + om1
+                output_block[i] = int(clip16((gain_prev + (gain - gain_prev) * (i+1)/BLOCKLEN)* np.cos(this_theta)))
+                theta = this_theta
 
             # Reset theta when out of bound of pi
             if theta > pi:
                 theta = theta - 2.0 * pi
+
+            # renew gain buffer
+            gain_prev = gain
 
             # change output status string
             output_status = 'Active'
 
             # status color for active
             color_status = (0, 255, 0)
+
+            # print gain and freq on screen
+            
         else:
             # if not set, output zero
             output_block = [0] * BLOCKLEN
@@ -261,7 +267,7 @@ with mp_hands.Hands(
         # show the output status on the screen
         pos_status = (20, 450)
 
-        cv2.putText(image, 'Output Status: {}, In Zone: {}'.format(output_status, str(flag_all_in_zone)),
+        cv2.putText(image, 'Output Status: {}'.format(output_status),
                     pos_status, font, font_size, color_status, font_thickness)
 
         # Print the image
