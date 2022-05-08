@@ -50,7 +50,7 @@ om_prev = 0
 # dictionary for ranges of the zone
 dict_zones = {
     'zone1': [(40, 40), (300, 420)],
-    'zone2': [(340, 40), (600, 420)]
+    'zone2': [(300, 40), (600, 420)]
 }
 
 # dictionary to link number indices with tags
@@ -271,6 +271,14 @@ with mp_hands.Hands(
 
         cv2.putText(image, 'Output Status: {}'.format(output_status),
                     pos_status, font, font_size, color_status, font_thickness)
+
+        # also, print the gain and frequency parameters on the screen
+        txt_gain_pos = (dict_zones['zone1'][0][0] + 10, dict_zones['zone1'][0][1] + 45)
+        cv2.putText(image, 'Gain = {:.2f}'.format(gain), txt_gain_pos, font,
+                    font_size, color_zone1, font_thickness)
+        txt_freq_pos = (dict_zones['zone2'][0][0] + 10, dict_zones['zone2'][0][1] + 45)
+        cv2.putText(image, 'Frequency = {:.2f} Hz'.format(f1), txt_freq_pos, font,
+                    font_size, color_zone2, font_thickness)
 
         # Print the image
         cv2.imshow('Digital Theremin', image)
