@@ -45,6 +45,7 @@ gain = 12800    # temp value for gain
 
 # some other variables to cancel artifact
 gain_prev = 0
+om_prev = 0
 
 # dictionary for ranges of the zone
 dict_zones = {
@@ -196,7 +197,7 @@ with mp_hands.Hands(
                 crit_left = np.mean(crit_l_arr, axis=0)
                 gain = (h - crit_left[1]) / h * 32767
 
-                # right hand: average distance between points
+                # right hand: average distance between points -> frequency
                 crit_r_arr = np.array(hand_coords[1])
                 dist_list = []
                 right_palm_dist = []
@@ -212,12 +213,12 @@ with mp_hands.Hands(
                 max_dist = np.max(dist_arr)
                 perc_dist = mean_dist/max_dist
 
-                print(mean_dist)
-
-                freq_range = (200, 1250)
+                # calculate the frequency
+                # essentially calculates the 
+                freq_range = (200, 2000)
                 f1 = set_freq(mean_dist, 300, freq_range)
-                print('f1 = {}'.format(f1))
 
+                # set output flag to true
                 flag_output = True
 
             else:
@@ -231,17 +232,18 @@ with mp_hands.Hands(
 
         # output when flag_output is set
         if flag_output:
+
             for i in range(0, BLOCKLEN):
-                this_theta = theta + om1
-                output_block[i] = int(clip16((gain_prev + (gain - gain_prev) * (i+1)/BLOCKLEN)* np.cos(this_theta)))
-                theta = this_theta
+                output_block[i] = int(clip16((gain_prev + (gain - gain_prev) * (i+1)/BLOCKLEN)* np.cos(theta)))
+                theta = theta + (om_prev + (om1 - om_prev) * (i+1)/BLOCKLEN)
 
             # Reset theta when out of bound of pi
             if theta > pi:
                 theta = theta - 2.0 * pi
 
-            # renew gain buffer
+            # renew buffer variables
             gain_prev = gain
+            om_prev = om1
 
             # change output status string
             output_status = 'Active'
@@ -250,7 +252,7 @@ with mp_hands.Hands(
             color_status = (0, 255, 0)
 
             # print gain and freq on screen
-            
+
         else:
             # if not set, output zero
             output_block = [0] * BLOCKLEN
