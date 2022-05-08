@@ -78,6 +78,9 @@ dict_hand_labels = {
     20: mp_hands.HandLandmark.PINKY_TIP,
 }
 
+
+# Hand recognition part
+
 # Capture WebCam feed
 cap = cv2.VideoCapture(0)
 with mp_hands.Hands(
@@ -137,15 +140,16 @@ with mp_hands.Hands(
                     font_size, color_zone2, font_thickness)
 
         # print info about input video feed on the screen
-        txt_color_imgsize = (0, 0, 255)
+        txt_color_imgsize = (0, 0, 0)
         txt_pos_imgsize = (10, 25)
         image = cv2.putText(image, 'Input image height: {}, width: {}. Press \"Q\" to quit.'.format(
             h, w), txt_pos_imgsize, font, font_size, txt_color_imgsize, font_thickness)
 
-        # sound part
 
-        # extract the landmarks that I need
-        # turn the indices into labels
+        # Sound part
+
+        # Extract the landmarks that I need
+        # Turn the indices into labels
 
         # Left hand (gain): 5 landmarks on the palm (without the wrist one)
         lm_idx_left = [1, 5, 9, 13, 17]
@@ -153,35 +157,35 @@ with mp_hands.Hands(
         for idx in lm_idx_left:
             lm_labels_left.append(dict_hand_labels[idx])
 
-        # right hand (freq): 5 landmarks on the tips of fingers
+        # Right hand (freq): 5 landmarks on the tips of fingers
         lm_idx_right = [4, 8, 12, 16, 20]
         lm_labels_right = []
         for idx in lm_idx_right:
             lm_labels_right.append(dict_hand_labels[idx])
 
-        # extract coordinates
+        # Extract coordinates
 
-        # construct a 2D list to store coordinates
+        # Construct a 2D list to store coordinates
         hand_coords = []
         hand_coords.append([])
         hand_coords.append([])
 
-        # get the length of multi_handedness
+        # Get the length of multi_handedness
         # i.e. num of hands detected
         if results.multi_handedness:
             num_hands = len(results.multi_handedness)
 
-            # output sound only when both hands are detected
+            # Output sound only when both hands are detected
             if num_hands == 2:
 
-                # determine the indices of the hands
+                # Determine the indices of the hands
                 # i.e. which hand has what index (0 or 1)?
                 for class_idx, classification in enumerate(results.multi_handedness):
                     if classification.classification[0].index == 0:
                         left_idx = class_idx
                         right_idx = 1 - left_idx
 
-                # append the coordinates of the hands to the list
+                # Append the coordinates of the hands to the list
                 # hand_coords[0] is left, hand_coords[1] is right
                 hand_coords[0] = get_coord(
                     lm_labels_left, results.multi_hand_landmarks[left_idx], size_image, results)
@@ -190,14 +194,14 @@ with mp_hands.Hands(
                 right_palm = get_coord(
                     lm_labels_left, results.multi_hand_landmarks[right_idx], size_image, results)
 
-                # calculate the critical values:
+                # Calculate the critical values:
 
-                # left hand: average coordinate of all points
+                # Left hand: average coordinate of all points -> gain
                 crit_l_arr = np.array(hand_coords[0])
                 crit_left = np.mean(crit_l_arr, axis=0)
                 gain = (h - crit_left[1]) / h * 32767
 
-                # right hand: average distance between points -> frequency
+                # Right hand: average distance between points -> frequency
                 crit_r_arr = np.array(hand_coords[1])
                 dist_list = []
                 right_palm_dist = []
@@ -207,32 +211,34 @@ with mp_hands.Hands(
                         dist_list.append(
                             calc_dist(crit_r_arr[i, :], crit_r_arr[j, :]))
 
-                # calculate average distance
+                # Calculate average distance
                 dist_arr = np.array(dist_list)
                 mean_dist = np.mean(dist_arr)
                 max_dist = np.max(dist_arr)
                 perc_dist = mean_dist/max_dist
 
-                # calculate the frequency
-                # essentially calculates the 
-                freq_range = (200, 2000)
+                # Calculate the frequency
+                freq_range = (200, 5120)
                 f1 = set_freq(mean_dist, 300, freq_range)
 
-                # set output flag to true
+                # Set output flag to true
                 flag_output = True
 
             else:
-                # don't output
+                # Don't output
                 flag_output = False
         else:
             flag_output = False
 
-        # the phase omega
+        # The phase omega
         om1 = 2.0 * pi * f1 / Fs
 
-        # output when flag_output is set
+        # Output when flag_output is set
         if flag_output:
 
+            # Calculate the output block
+            # Note that the gain and frequency are applied gradual change
+            # Which eliminates the artifacts
             for i in range(0, BLOCKLEN):
                 output_block[i] = int(clip16((gain_prev + (gain - gain_prev) * (i+1)/BLOCKLEN)* np.cos(theta)))
                 theta = theta + (om_prev + (om1 - om_prev) * (i+1)/BLOCKLEN)
@@ -241,38 +247,40 @@ with mp_hands.Hands(
             if theta > pi:
                 theta = theta - 2.0 * pi
 
-            # renew buffer variables
+            # Renew buffer variables
             gain_prev = gain
             om_prev = om1
 
-            # change output status string
+            # Change output status string
             output_status = 'Active'
 
-            # status color for active
+            # Status color for active
             color_status = (0, 255, 0)
 
-            # print gain and freq on screen
-
         else:
-            # if not set, output zero
+            # If not set, output zero
             output_block = [0] * BLOCKLEN
             output_status = 'Inactive'
 
-            # status color for inactive
+            # Status color for inactive
             color_status = (0, 0, 255)
 
-        # output audio block
+            # Output 0 for the parameters
+            f1 = 0
+            gain = 0
+
+        # Output audio block
         binary_data = struct.pack(
             'h' * BLOCKLEN, *output_block)   # 'h' for 16 bits
         stream.write(binary_data)
 
-        # show the output status on the screen
+        # Show the output status on the screen
         pos_status = (20, 450)
 
         cv2.putText(image, 'Output Status: {}'.format(output_status),
                     pos_status, font, font_size, color_status, font_thickness)
 
-        # also, print the gain and frequency parameters on the screen
+        # Also, print the gain and frequency parameters on the screen
         txt_gain_pos = (dict_zones['zone1'][0][0] + 10, dict_zones['zone1'][0][1] + 45)
         cv2.putText(image, 'Gain = {:.2f}'.format(gain), txt_gain_pos, font,
                     font_size, color_zone1, font_thickness)

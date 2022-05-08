@@ -2,7 +2,9 @@ import numpy as np
 
 
 def clip16(x):
-    # Clipping for 16 bits
+    '''
+    Clipping for 16 bits
+    '''
     if x > 32767:
         x = 32767
     elif x < -32768:
@@ -11,7 +13,7 @@ def clip16(x):
         x = x
     return (x)
 
-
+# Deprecated, not working well
 def in_zone(point, zone_left_top, zone_right_bot):
     '''
     Determine whether a point is in a 2-D rectangular zone.
@@ -104,7 +106,7 @@ def set_freq(x, max_x, freq_range):
 
     freq_range = np.array(freq_range)
 
-    x_range = np.log(freq_range)
+    x_range = np.log10(freq_range)
     xr_width = np.max(x_range) - np.min(x_range)
     
     # get the percentage of x to max_x
@@ -114,6 +116,6 @@ def set_freq(x, max_x, freq_range):
     x_curr = np.min(x_range) + xr_width * ratio
 
     # get current frequency
-    freq_curr = np.exp(x_curr)
+    freq_curr = 10**x_curr
 
     return freq_curr
