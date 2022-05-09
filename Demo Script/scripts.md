@@ -14,7 +14,9 @@ This video is the demo of our project. Our topic is digital theremin.
 
 This is a photo of a theremin. It is an instrument with a quite futuristic look. It has two metal antennas and it can use the antennas to detect positions and gestures of hands, and produce a sound with certain gain and frequency according to the position and gestures detected. In order to reproduce this mechanism, we designed a program, with a process much alike.
 
-To detect hands, we used a Python package called mediapipe. It is developed by Google, and we implemented its hand detection process. Also, part of the codes come from, and are inspired by Nicholas Renotte, much thanks to his public tutorial videos and codes. (Github page and YouTube page here)
+To detect hands, we used a Python package called mediapipe. It is developed by Google, and we implemented its hand detection process. Also, part of the codes are inspired by Nicholas Renotte, much thanks to his public tutorial videos and codes. (Github page and YouTube page here)
+
+Although a part of the codes are inspired by Nicholas Renotte, by "inspired" I mean that I only learnt the thoughts implemented inside his tutorial and the detection codes and custom functions I used are designed by myself. (i.e. The functions in myfunctions.py are designed by myself and tested usable, except for the `clip16` function, which comes from the demo) Also, the overall hand detection codes come from the Google mediapipe ofiicial demo, link on the screen.
 
 After running the program, as you can see, the window pops up and it shows the size of the image, which hands controls what parameter, the parameter values and the output status. The program will only output the sound when both hands are detected. But because mediapipe uses a neural network to detect hands, it may recognize something else as a hand by mistake. But those are only occasional cases and can be corrected very fast.
 
