@@ -16,7 +16,7 @@ This is a photo of a theremin. It is an instrument with a quite futuristic look.
 
 To detect hands, we used a Python package called mediapipe. It is developed by Google, and we implemented its hand detection process. Also, part of the codes come from, and are inspired by Nicholas Renotte, much thanks to his public tutorial videos and codes. (Github page and YouTube page here)
 
-After running the program, as you can see, the window pops up and it shows the size of the image, which hands controls what parameter, the parameter values and the output status. The program will only output the sound when both hands are detected. But because mediapipe uses a neural network to detect hands, it may recognize something else as a hand by mistake.
+After running the program, as you can see, the window pops up and it shows the size of the image, which hands controls what parameter, the parameter values and the output status. The program will only output the sound when both hands are detected. But because mediapipe uses a neural network to detect hands, it may recognize something else as a hand by mistake. But those are only occasional cases and can be corrected very fast.
 
 This is a picture of the recognition points on a hand. After two hands are correctly recognized, it detects some points and calculate the parameters.
 
